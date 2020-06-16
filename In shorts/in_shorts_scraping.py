@@ -9,6 +9,8 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 import numpy as np
+from datetime import datetime
+import calendar
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
@@ -35,7 +37,7 @@ def build_dataset(seed_urls):
                           'news_time': date.find('span', 
                                                        attrs={"class": "time"}).string,
                           'news_link': headline.find('a')['href'], 
-                          'news_category': news_category}
+                          'news_category': news_category.capitalize()}
                          
                             for headline, article, date in 
                              zip(soup.find_all('div', 
@@ -47,11 +49,19 @@ def build_dataset(seed_urls):
                         ]
         
         news_data.extend(news_articles)
-        
+    
+  
     df =  pd.DataFrame(news_data)
-    df['news_timestamp']=df['news_date'].str.cat(df['news_time'],sep=" ")
+    Timestamp=[]
+    for i in df['news_headline']:
+        time=str(datetime.today())
+        date=datetime.today().strftime('%Y-%m-%d')
+        day=datetime.strptime(date, '%Y-%m-%d').weekday() 
+        Timestamp.append(time+" "+calendar.day_name[day])
+    print(Timestamp[0])
+    df['news_timestamp']=Timestamp
     df = df[['news_headline', 'news_article', 'news_category','news_timestamp','news_link']]
     return df
 
 news_df = build_dataset(seed_urls)
-news_df.to_csv("inshorts_16_06_2020.csv")
+news_df.to_csv("./Dataset/inshorts_16_06_2020.csv")
