@@ -8,9 +8,9 @@ Created on Mon Jun 15 13:21:08 2020
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
+import datetime
 import numpy as np
-from datetime import datetime
-import calendar
+from dateutil.parser import parse
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
@@ -28,16 +28,14 @@ def build_dataset(seed_urls):
         data = requests.get(url)
         soup = BeautifulSoup(data.content, 'html.parser')
         
-        news_articles = [{'news_headline': headline.find('span', 
+        news_articles = [{'Heading': headline.find('span', 
                                                          attrs={"itemprop": "headline"}).string,
-                          'news_article': article.find('div', 
+                          'Summary': article.find('div', 
                                                        attrs={"itemprop": "articleBody"}).string,
                           'news_date': date.find('span', 
                                                        attrs={"clas": "date"}).string,
-                          'news_time': date.find('span', 
-                                                       attrs={"class": "time"}).string,
-                          'news_link': headline.find('a')['href'], 
-                          'news_category': news_category.capitalize()}
+                          'Link': headline.find('a')['href'], 
+                          'Category': news_category.capitalize()}
                          
                             for headline, article, date in 
                              zip(soup.find_all('div', 
@@ -49,19 +47,19 @@ def build_dataset(seed_urls):
                         ]
         
         news_data.extend(news_articles)
-    
-  
+        
     df =  pd.DataFrame(news_data)
-    Timestamp=[]
-    for i in df['news_headline']:
-        time=str(datetime.today())
-        date=datetime.today().strftime('%Y-%m-%d')
-        day=datetime.strptime(date, '%Y-%m-%d').weekday() 
-        Timestamp.append(time+" "+calendar.day_name[day])
-    print(Timestamp[0])
-    df['news_timestamp']=Timestamp
-    df = df[['news_headline', 'news_article', 'news_category','news_timestamp','news_link']]
+    datetimesplit=df['news_date'].str.split(",", n=1, expand=True)
+    df['Date']=datetimesplit[0]
+    df['Day']=datetimesplit[1]
+    df.drop(columns=["news_date"],inplace=True)
+    
+        #date[i]=parse(date[i]).strftime('%Y/%m/%d')
+    for i in range(len(df['Date'])):
+        df['Date'][i]=datetime.datetime.strptime(df['Date'][i], '%d %b %Y').strftime('%Y-%m-%d')
+    df['Timestamp']=df['Date'].str.cat(df['Day'],sep=",")
+    df = df[['Heading', 'Summary', 'Category','Link','Timestamp']]
     return df
 
 news_df = build_dataset(seed_urls)
-news_df.to_csv("./Dataset/inshorts_16_06_2020.csv")
+news_df.to_csv("./Dataset/inshorts_2020-06-17.csv")
